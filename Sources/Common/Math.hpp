@@ -175,6 +175,18 @@ namespace math
     }
 
     /**
+     * \brief Квадрат длины 2-мерного вектора
+     * \tparam T Тип компонентов вектора
+     * \param v Вектор
+     * \return Длинна вектора
+     */
+    template <typename T = float>
+    float LengthSquared(const Vec2<T>& v)
+    {
+        return static_cast<float>((v.x * v.x) + (v.y * v.y));
+    }
+
+    /**
      * Длина 3-мерного вектора
      * \tparam T Тип компонентов вектора
      * \param v Вектор
@@ -184,6 +196,18 @@ namespace math
     float Length(const Vec3<T>& v)
     {
         return static_cast<float>(sqrtf((v.x * v.x) + (v.y * v.y) + (v.z * v.z)));
+    }
+
+    /**
+     * Квадрат длины 3-мерного вектора
+     * \tparam T Тип компонентов вектора
+     * \param v Вектор
+     * \return Длинна вектора
+     */
+    template <typename T = float>
+    float LengthSquared(const Vec3<T>& v)
+    {
+        return static_cast<float>((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
     }
 
     /**
