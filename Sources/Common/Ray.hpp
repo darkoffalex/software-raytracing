@@ -34,11 +34,28 @@ namespace math
                 origin_(origin), direction_(math::Normalize(direction)), weight_(weight) {};
 
         /**
-         * \brief Получить координаты начала луч
+         * \brief Установить координаты начала луча
+         * \param origin Точка в пространстве
+         */
+        void setOrigin(const math::Vec3<float>& origin){
+            this->origin_ = origin;
+        }
+
+        /**
+         * \brief Получить координаты начала луча
          * \return Точка в пространстве
          */
         const math::Vec3<float>& getOrigin() const {
             return this->origin_;
+        }
+
+        /**
+         * \brief Установить вектор направления луча
+         * \param direction Вектор в пространстве
+         * \param normalize Нормализовать вектор
+         */
+        void setDirection(const math::Vec3<float>& direction, bool normalize = true){
+            this->direction_ = normalize ? math::Normalize(direction) : direction;
         }
 
         /**
@@ -47,6 +64,14 @@ namespace math
          */
         const math::Vec3<float>& getDirection() const {
             return this->direction_;
+        }
+
+        /**
+         * \brief Установить вес (силу) луча
+         * \param weight Значение веса
+         */
+        void setWeight(const float weight){
+            this->weight_ = weight;
         }
 
         /**

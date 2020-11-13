@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Types.h"
+#include "Utils.h"
 
 class Sphere : public HittableElement
 {
@@ -22,8 +22,8 @@ public:
      * \param position Положение центра сферы
      * \param radius Радиус сферы
      */
-    Sphere(const math::Vec3<float>& position, const float& radius):
-    position_(position),radius_(radius){}
+    Sphere(const math::Vec3<float>& position, const float& radius, const std::shared_ptr<Material>& materialPtr):
+    HittableElement(materialPtr),position_(position),radius_(radius){}
 
     /**
      * \brief Деструктор
@@ -55,6 +55,7 @@ public:
                 hitInfo->point = ray.getOrigin() + (ray.getDirection() * t);
                 hitInfo->normal = math::Normalize(hitInfo->point - position_);
                 hitInfo->frontFaceSurface = true;
+                hitInfo->materialPtr = this->materialPtr_;
 
                 // Если нормаль не направлена против луча, считать что это обратная сторона (и инвертировать нормаль)
                 if(math::Dot(-ray.getDirection(),hitInfo->normal) < 0.0f){

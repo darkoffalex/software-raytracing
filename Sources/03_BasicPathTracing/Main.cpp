@@ -1,16 +1,12 @@
 #include <iostream>
 #include <windows.h>
-#include <memory>
-#include <vector>
-#include <ctime>
-#include <chrono>
-#include <random>
 
 #include <Math.hpp>
 #include <Ray.hpp>
 #include <ImageBuffer.hpp>
 
-#include "Types.h"
+#include "Utils.h"
+#include "Materials.hpp"
 #include "Sphere.hpp"
 
 #define MAX_RECURSION_DEPTH 50
@@ -59,85 +55,6 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
  * \param hWnd Дескриптор окна
  */
 void PresentFrame(void *pixels, int width, int height, HWND hWnd);
-
-/** U T I L S  **/
-
-/**
- * \brief Случайное float значение
- * \param min Минимальная граница
- * \param max Максимальная границе
- * \return Случайное значение
- */
-inline float RndFloat(float min = 0.0f, float max = 1.0f){
-    static std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-    static std::mt19937 generator(ms.count());
-    static std::uniform_real_distribution<float> distribution(min, max);
-
-    return distribution(generator);
-}
-
-/**
- * \brief Случайный вектор в заданых пределах
- * \param min Минимальное значение всех координат
- * \param max Максимальное значение всех координат
- * \return Вектор
- */
-inline math::Vec3<float> RndVec3(float min = -1.0f, float max = 1.0f){
-    static std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-    static std::mt19937 generator(ms.count());
-    static std::uniform_real_distribution<float> distribution(min, max);
-
-    return {
-        distribution(generator),
-        distribution(generator),
-        distribution(generator)
-    };
-}
-
-/**
- * \brief Случайная точка в пределах единичной сферы
- * \return Вектор
- */
-inline math::Vec3<float> RndUnitSpherePoint(){
-    while (true){
-        auto p = RndVec3();
-        if(math::LengthSquared(p) >= 1) continue;
-        return p;
-    }
-}
-
-/**
- * \brief Случайный вектор в пределах полусферы направленной в направлении a
- * \param a Направление (ориентация) полусферы
- * \return Вектор
- */
-inline math::Vec3<float> RndHemisphereVec(const math::Vec3<float>& a)
-{
-    // Генератор случайных чисел
-    static std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-    static std::mt19937 generator(ms.count());
-
-    // Коэффициенты распределения для двух уголов
-    std::uniform_real_distribution<float> fiDist(0.0f,1.0f);
-    std::uniform_real_distribution<float> thetaDist(-1.0f, 1.0f);
-
-    // Вектор перпендикулярный вектору направления
-    auto b = math::Normalize(math::Cross(a,a + math::Vec3<float>(0.01f,0.01f,0.01f)));
-
-    // Второй перпендикулярный вектор
-    auto c = math::Normalize(math::Cross(a, b));
-
-    // Случайные углы (fi - для вектора вращяющегося вокруг направления a, fi - угол между итоговым вектором и направлением a)
-    float fi = (fiDist(generator) * 360.0f) / 57.2958f; // [0 - 360]
-    float theta = (thetaDist(generator) * 90.0f) / 57.2958f; // [-90 - 90]
-
-    // Вектор описывающий круг вокруг направления a
-    math::Vec3<float> d = (b * std::cos(fi)) + (c * std::sin(fi));
-    // Вектор отклоненный от a на случайный угол
-    math::Vec3<float> e = (a * std::cos(theta)) + (d * std::sin(theta));
-
-    return e;
-}
 
 /** R A Y T R A C I N G  **/
 
@@ -243,16 +160,23 @@ int main(int argc, char* argv[])
         auto frameBuffer = ImageBuffer<RGBQUAD>(clientRect.right, clientRect.bottom, {0, 0, 0, 0});
         std::cout << "INFO: Frame-buffer initialized  (resolution : " << frameBuffer.getWidth() << "x" << frameBuffer.getHeight() << ", size : " << frameBuffer.getSize() << " bytes)" << std::endl;
 
+        // Материалы
+        auto materialGround = std::make_shared<MaterialDiffuse>(math::Vec3<float>(0.8f,0.8f,0.0f));
+        auto materialCenter = std::make_shared<MaterialDiffuse>(math::Vec3<float>(0.7f,0.3f,0.3f));
+        auto materialLeft = std::make_shared<MaterialMetal>(math::Vec3<float>(0.8f,0.8f,0.8f),0.3f);
+        auto materialRight = std::make_shared<MaterialMetal>(math::Vec3<float>(0.8f,0.6f,0.2f),1.0f);
+
         // Сцена
         Scene scene{};
-        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(0.0f,0.0f,-1.0f),0.5f));
-        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(0,-100.5f,-1.0),100.0f));
+        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(0,-100.5f,-1.0),100.0f,materialGround));
+        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(0.0f,0.0f,-1.0f),0.5f,materialCenter));
+        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(-1.0f,0.0f,-1.0f),0.5f,materialLeft));
+        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(1.0f,0.0f,-1.0f),0.5f,materialRight));
 
         // Трассировка сцены лучами, запись результата в буфер изображения
         auto renderBeginTime = std::chrono::system_clock::now();
         Render(&frameBuffer, scene, 90.0f, MULTISAMPLING_LEVEL);
         std::cout << "INFO: Scene rendered in " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - renderBeginTime).count() << " ms." << std::endl;
-
 
         // Показ кадра
         PresentFrame(frameBuffer.getData(), static_cast<int>(frameBuffer.getWidth()), static_cast<int>(frameBuffer.getHeight()), g_hwnd);
@@ -439,31 +363,35 @@ void Render(ImageBuffer<RGBQUAD> *imageBuffer, const Scene& scene, const float &
  */
 bool TraceTay(const math::Ray &ray, const HittableElement& hittableElement, math::Vec3<float> *outColor, unsigned recursionDepth)
 {
+    // Если превышена глубина - отдать черный цвет
+    if(recursionDepth >= MAX_RECURSION_DEPTH){
+        *outColor = {0.0f,0.0f,0.0f};
+        return false;
+    }
+
     // Информация о пересечении с объектом
     HitInfo hitInfo{};
 
     // Если пересечение было
-    if(recursionDepth < MAX_RECURSION_DEPTH && hittableElement.intersectsRay(ray,0.001f,1000.0f,&hitInfo))
+    if(hittableElement.intersectsRay(ray,0.001f,1000.0f,&hitInfo))
     {
-        /*
-        // Цель для переотраженного уча (случайная точка внутри единичной сферы рядом с точкой пересечения)
-        math::Vec3<float> target = hitInfo.point + hitInfo.normal + RndUnitSpherePoint();
-        // Вектор направления переотраженного луча
-        math::Vec3<float> rayDir = target - hitInfo.point;
-        */
+        math::Ray scatteredRay = {};
+        math::Vec3<float> attenuation = {};
 
-        // Вектор направления переотраженного луча (случайное направление в пределах полусферы)
-        math::Vec3<float> rayDir = RndHemisphereVec(hitInfo.normal);
+        // Если луч переотражается
+        if(hitInfo.materialPtr != nullptr && hitInfo.materialPtr->scatter(ray,hitInfo,&attenuation,&scatteredRay))
+        {
+            // Трассировать сцену переотраженным лучом и получить цвет
+            math::Vec3<float> color{};
+            TraceTay(scatteredRay,hittableElement,&color,recursionDepth + 1);
+            *outColor = attenuation * color;
+        }
+        // Если луч поглощается
+        else{
+            *outColor = {0.0f,0.0f,0.0f};
+        }
 
-        // Случайный переотраженный луч
-        math::Ray newRay(hitInfo.point, rayDir);
-
-        // Трассировать сцену переотраженным лучом и получить цвет
-        math::Vec3<float> color{};
-        TraceTay(newRay,hittableElement,&color,recursionDepth + 1);
-
-        // Цвет для вторичного луча делится на 2
-        *outColor = color * 0.5f;
+        // Пересечение засчитано
         return true;
     }
 

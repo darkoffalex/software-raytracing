@@ -7,7 +7,7 @@ set(TARGET_BIN_NAME "03_BasicPathTracing")
 
 # Добавляем .exe (проект в Visual Studio)
 add_executable(${TARGET_NAME}
-        "Main.cpp" "Types.h" "Sphere.hpp")
+        "Main.cpp" "Utils.h" "Materials.hpp" "Sphere.hpp")
 
 # Меняем название запускаемого файла в зависимости от типа сборки
 set_property(TARGET ${TARGET_NAME} PROPERTY OUTPUT_NAME "${TARGET_BIN_NAME}$<$<CONFIG:Debug>:_Debug>_${PLATFORM_BIT_SUFFIX}")
