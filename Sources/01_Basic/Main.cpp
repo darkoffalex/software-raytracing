@@ -30,7 +30,7 @@ HDC g_hdc = nullptr;
 /// Наименование класса
 const char* g_strClassName = "MainWindowClass";
 /// Заголовок окна
-const char* g_strWindowCaption = "Basic software raytracing";
+const char* g_strWindowCaption = "01 - Basic example";
 /// Код последней ошибки
 ErrorCode g_lastError = ErrorCode::eNoErrors;
 

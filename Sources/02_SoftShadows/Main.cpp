@@ -33,7 +33,7 @@ HDC g_hdc = nullptr;
 /// Наименование класса
 const char* g_strClassName = "MainWindowClass";
 /// Заголовок окна
-const char* g_strWindowCaption = "Basic software raytracing";
+const char* g_strWindowCaption = "02 - Soft shadows";
 /// Код последней ошибки
 ErrorCode g_lastError = ErrorCode::eNoErrors;
 /// Генератор случайных чисел

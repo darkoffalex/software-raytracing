@@ -107,7 +107,7 @@ namespace math
             // Коэффициенты квадратного уравнения
             float a = math::Dot(this->direction_,this->direction_);
             float b = 2.0f * math::Dot(this->direction_,oc);
-            float c = math::Dot(oc,oc) - radius * radius;
+            float c = math::Dot(oc,oc) - (radius * radius);
 
             // Дискриминант
             float discriminant = b*b - 4.0f * a * c;

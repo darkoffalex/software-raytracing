@@ -12,6 +12,10 @@
 2) Мягкие тени.
 
    ![изображение](README_files/soft_swadows.png)
+   
+3) Базовый трассировщий путей (path tracing)
+
+   ![изображение](README_files/basic_path_tracing.png)
 
 Код писался и тестировался при помощи следующего набора инструментов
  - CLion (IDE)

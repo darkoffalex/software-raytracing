@@ -300,14 +300,15 @@ namespace math
      * \param v Исходный вектор
      * \param normal Нормаль
      * \param eta Коэффициент преломления
+     * \param reflectOnImpossibleAngles Отражать при углах не имеющих решения
      * \return Отраженный вектор
      */
     template <typename T = float>
-    Vec3<T> Refract(const Vec3<T>& v, const Vec3<T>& normal, float eta)
+    Vec3<T> Refract(const Vec3<T>& v, const Vec3<T>& normal, float eta, bool reflectOnImpossibleAngles = true)
     {
         auto dot = math::Dot(v,normal);
         auto k = 1.0f - eta * eta * (1.0f - dot * dot);
-        if (k < 0.0f) return {0.0f,0.0f,0.0f};
+        if (k < 0.0f) return (reflectOnImpossibleAngles ? math::Reflect<T>(v,normal) : math::Vec3<T>(0.0f,0.0f,0.0f));
         return (v * eta) - (normal * (eta * dot + sqrtf(k)));
     }
 

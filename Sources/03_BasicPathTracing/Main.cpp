@@ -10,7 +10,7 @@
 #include "Sphere.hpp"
 
 #define MAX_RECURSION_DEPTH 50
-#define MULTISAMPLING_LEVEL 16
+#define MULTISAMPLING_LEVEL 32
 
 /**
  * Коды ошибок
@@ -31,7 +31,7 @@ HDC g_hdc = nullptr;
 /// Наименование класса
 const char* g_strClassName = "MainWindowClass";
 /// Заголовок окна
-const char* g_strWindowCaption = "Basic software raytracing";
+const char* g_strWindowCaption = "03 - Basic path tracing example";
 /// Код последней ошибки
 ErrorCode g_lastError = ErrorCode::eNoErrors;
 
@@ -63,7 +63,9 @@ void PresentFrame(void *pixels, int width, int height, HWND hWnd);
  * \param imageBuffer Целевой буфер изображения
  * \param scene Сцена
  * \param fov Угол обзора
- * \param samplerPerPixel Кол-во семплов (лучей) на один пиксель кадрового буфера
+ * \param samplesPerPixel Кол-во семплов (лучей) на один пиксель кадрового буфера
+ * \param camPosition Положение камеры
+ * \param camOrientation Ориентация камеры
  *
  * \details В данном методе происходит генерация лучей для каждого пикселя кадрового буфера и последующая
  * трассировка лучами сцены, а также запись полученных значений в пиксели кадрового буфера
@@ -72,7 +74,9 @@ void Render(
         ImageBuffer<RGBQUAD> *imageBuffer,
         const Scene& scene,
         const float& fov,
-        unsigned samplerPerPixel = 1);
+        unsigned samplesPerPixel = 1,
+        math::Vec3<float> camPosition = {0.0f,0.0f,0.0f},
+        math::Vec3<float> camOrientation = {0.0f,0.0f,0.0f});
 
 /**
  * \brief Метод трассировки сцены лучом
@@ -132,7 +136,7 @@ int main(int argc, char* argv[])
                 g_strWindowCaption,
                 WS_OVERLAPPEDWINDOW,
                 0, 0,
-                640, 480,
+                800, 600,
                 nullptr,
                 nullptr,
                 g_hInstance,
@@ -162,20 +166,22 @@ int main(int argc, char* argv[])
 
         // Материалы
         auto materialGround = std::make_shared<MaterialDiffuse>(math::Vec3<float>(0.8f,0.8f,0.0f));
-        auto materialCenter = std::make_shared<MaterialDiffuse>(math::Vec3<float>(0.7f,0.3f,0.3f));
+        auto materialCenter = std::make_shared<MaterialDiffuse>(math::Vec3<float>(0.1f,0.2f,0.5f));
         auto materialLeft = std::make_shared<MaterialMetal>(math::Vec3<float>(0.8f,0.8f,0.8f),0.3f);
-        auto materialRight = std::make_shared<MaterialMetal>(math::Vec3<float>(0.8f,0.6f,0.2f),1.0f);
+        auto materialRight = std::make_shared<MaterialMetal>(math::Vec3<float>(0.8f,0.6f,0.2f),0.4f);
+        auto materialGlass = std::make_shared<MaterialDielectric>(0.625f);
 
         // Сцена
         Scene scene{};
         scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(0,-100.5f,-1.0),100.0f,materialGround));
         scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(0.0f,0.0f,-1.0f),0.5f,materialCenter));
-        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(-1.0f,0.0f,-1.0f),0.5f,materialLeft));
+        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(-1.0f,0.0f,-1.0f),0.5f,materialGlass));
+        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(-1.0f,0.0f,-1.0f),0.4f,materialGlass,true));
         scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(1.0f,0.0f,-1.0f),0.5f,materialRight));
 
         // Трассировка сцены лучами, запись результата в буфер изображения
         auto renderBeginTime = std::chrono::system_clock::now();
-        Render(&frameBuffer, scene, 90.0f, MULTISAMPLING_LEVEL);
+        Render(&frameBuffer, scene, 50.0f, MULTISAMPLING_LEVEL,{-2.0f,1.5f,1.0f},{-30.0f,-42.0f,0.0f});
         std::cout << "INFO: Scene rendered in " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - renderBeginTime).count() << " ms." << std::endl;
 
         // Показ кадра
@@ -289,12 +295,14 @@ void PresentFrame(void *pixels, int width, int height, HWND hWnd)
  * \param imageBuffer Целевой буфер изображения
  * \param scene Сцена
  * \param fov Угол обзора
- * \param samplerPerPixel Кол-во семплов (лучей) на один пиксель кадрового буфера
+ * \param samplesPerPixel Кол-во семплов (лучей) на один пиксель кадрового буфера
+ * \param camPosition Положение камеры
+ * \param camOrientation Ориентация камеры
  *
  * \details В данном методе происходит генерация лучей для каждого пикселя кадрового буфера и последующая
  * трассировка лучами сцены, а также запись полученных значений в пиксели кадрового буфера
  */
-void Render(ImageBuffer<RGBQUAD> *imageBuffer, const Scene& scene, const float &fov, unsigned samplerPerPixel)
+void Render(ImageBuffer<RGBQUAD> *imageBuffer, const Scene& scene, const float &fov, unsigned samplesPerPixel, math::Vec3<float> camPosition, math::Vec3<float> camOrientation)
 {
     // Размеры кадрового буфера
     auto w = static_cast<float>(imageBuffer->getWidth());
@@ -311,18 +319,21 @@ void Render(ImageBuffer<RGBQUAD> *imageBuffer, const Scene& scene, const float &
             math::Vec3<float> pixelColor = {0.0f, 0.0f, 0.0f};
             
             // Проход по семплам пикселя
-            for(unsigned s = 0; s < samplerPerPixel; s++)
+            for(unsigned s = 0; s < samplesPerPixel; s++)
             {
                 // Отклонение луча в пределах пикселя
                 // В случае мультисемплинга генерируется случайный сдвинг, в противном случае сдвиг устанавливается в центр пикселя
-                math::Vec2<float> pixelBias = (samplerPerPixel > 1 ? math::Vec2<float>(RndFloat(), RndFloat()) : math::Vec2<float>(0.5f, 0.5f));
+                math::Vec2<float> pixelBias = (samplesPerPixel > 1 ? math::Vec2<float>(RndFloat(), RndFloat()) : math::Vec2<float>(0.5f, 0.5f));
 
                 // Вычислить отклонение луча для текущего пикселя по углу обзора и текущим координатам пикселя
                 float x = (2.0f * (static_cast<float>(i) + pixelBias.x) / w - 1.0f) * tanf(fovRadians / 2.0f) * w / h;
                 float y = -(2.0f * (static_cast<float>(j) + pixelBias.y) / h - 1.0f) * tanf(fovRadians / 2.0f);
 
+                // Направление луча (с учетом поворота камеры)
+                math::Vec3<float> dir = math::GetRotationMat(camOrientation) * math::Vec3<float>(x,y,-1.0f);
+
                 // Создать луч
-                math::Ray ray({0.0f,0.0f,0.0f},{x,y,-1.0f});
+                math::Ray ray(camPosition,dir);
 
                 // Трассировка сцены и получение цвета
                 math::Vec3<float> sampleColor = {0.0f,0.0f,0.0f};
@@ -333,7 +344,7 @@ void Render(ImageBuffer<RGBQUAD> *imageBuffer, const Scene& scene, const float &
             }
 
             // Поделить цвет на кол-во семплов
-            pixelColor = pixelColor / static_cast<float>(samplerPerPixel);
+            pixelColor = pixelColor / static_cast<float>(samplesPerPixel);
 
             // Гамма коррекция (для гаммы в 2.0)
             pixelColor = {

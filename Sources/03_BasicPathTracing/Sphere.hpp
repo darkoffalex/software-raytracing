@@ -9,21 +9,25 @@ private:
     math::Vec3<float> position_;
     /// Радиус сферы
     float radius_;
+    /// Вывернутая сфера
+    bool inverted_;
 
 public:
     /**
      * \brief Конструктор по умолчанию
      */
     Sphere():
-    HittableElement(),position_({0.0f,0.0f,0.0f}),radius_(1.0f){};
+    HittableElement(),position_({0.0f,0.0f,0.0f}),radius_(1.0f),inverted_(false){};
 
     /**
      * \brief Основной конструктор
      * \param position Положение центра сферы
      * \param radius Радиус сферы
+     * \param materialPtr Указатель на материал сферы
+     * \param inverted Вывернутая сфера
      */
-    Sphere(const math::Vec3<float>& position, const float& radius, const std::shared_ptr<Material>& materialPtr):
-    HittableElement(materialPtr),position_(position),radius_(radius){}
+    Sphere(const math::Vec3<float>& position, const float& radius, const std::shared_ptr<Material>& materialPtr, bool inverted = false):
+    HittableElement(materialPtr),position_(position),radius_(radius),inverted_(inverted){}
 
     /**
      * \brief Деструктор
@@ -56,6 +60,11 @@ public:
                 hitInfo->normal = math::Normalize(hitInfo->point - position_);
                 hitInfo->frontFaceSurface = true;
                 hitInfo->materialPtr = this->materialPtr_;
+
+                // Если сфера вывернута наизнанку
+                if(inverted_){
+                    hitInfo->normal = -hitInfo->normal;
+                }
 
                 // Если нормаль не направлена против луча, считать что это обратная сторона (и инвертировать нормаль)
                 if(math::Dot(-ray.getDirection(),hitInfo->normal) < 0.0f){
