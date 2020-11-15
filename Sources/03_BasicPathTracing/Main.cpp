@@ -9,8 +9,12 @@
 #include "Materials.hpp"
 #include "Sphere.hpp"
 
-#define MAX_RECURSION_DEPTH 50
-#define MULTISAMPLING_LEVEL 32
+// Максимальная грубина рекурсии
+#define MAX_RECURSION_DEPTH 24
+// Мультисемплинг (сколько лучей генерировать на 1 пиксель картинки)
+#define MULTISAMPLING_LEVEL 16
+// Сколько разбрасываемых лучей генерировать при пересечении луча и объекта
+#define SAMPLES_PER_RAY 1
 
 /**
  * Коды ошибок
@@ -177,6 +181,7 @@ int main(int argc, char* argv[])
         scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(0.0f,0.0f,-1.0f),0.5f,materialCenter));
         scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(-1.0f,0.0f,-1.0f),0.5f,materialGlass));
         scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(-1.0f,0.0f,-1.0f),0.4f,materialGlass,true));
+//        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(-1.0f,0.0f,-1.0f),0.5f,materialLeft));
         scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(1.0f,0.0f,-1.0f),0.5f,materialRight));
 
         // Трассировка сцены лучами, запись результата в буфер изображения
@@ -375,7 +380,7 @@ void Render(ImageBuffer<RGBQUAD> *imageBuffer, const Scene& scene, const float &
 bool TraceTay(const math::Ray &ray, const HittableElement& hittableElement, math::Vec3<float> *outColor, unsigned recursionDepth)
 {
     // Если превышена глубина - отдать черный цвет
-    if(recursionDepth >= MAX_RECURSION_DEPTH){
+    if(recursionDepth > MAX_RECURSION_DEPTH){
         *outColor = {0.0f,0.0f,0.0f};
         return false;
     }
@@ -386,21 +391,36 @@ bool TraceTay(const math::Ray &ray, const HittableElement& hittableElement, math
     // Если пересечение было
     if(hittableElement.intersectsRay(ray,0.001f,1000.0f,&hitInfo))
     {
-        math::Ray scatteredRay = {};
-        math::Vec3<float> attenuation = {};
-
-        // Если луч переотражается
-        if(hitInfo.materialPtr != nullptr && hitInfo.materialPtr->scatter(ray,hitInfo,&attenuation,&scatteredRay))
+        // Если есть материал
+        if(hitInfo.materialPtr != nullptr)
         {
-            // Трассировать сцену переотраженным лучом и получить цвет
-            math::Vec3<float> color{};
-            TraceTay(scatteredRay,hittableElement,&color,recursionDepth + 1);
-            *outColor = attenuation * color;
+            // Итоговый цвет луча
+            math::Vec3<float> resultColor = {0.0f,0.0f,0.0f};
+
+            // Генерировать заданное кол-во расбросанных лучей
+            for(unsigned s = 0; s < SAMPLES_PER_RAY; s++)
+            {
+                math::Ray scatteredRay = {};
+                math::Vec3<float> attenuation = {};
+
+                if(hitInfo.materialPtr->scatter(ray,hitInfo,&attenuation,&scatteredRay))
+                {
+                    // Трассировать сцену переотраженным лучом и получить цвет
+                    math::Vec3<float> rayColor{};
+                    TraceTay(scatteredRay, hittableElement, &rayColor, recursionDepth + 1);
+                    resultColor = resultColor + (attenuation * rayColor);
+                }
+            }
+
+            // Усреднение результата
+            *outColor = resultColor / static_cast<float>(SAMPLES_PER_RAY);
         }
-        // Если луч поглощается
-        else{
+        // Если нет материала
+        else
+        {
             *outColor = {0.0f,0.0f,0.0f};
         }
+
 
         // Пересечение засчитано
         return true;

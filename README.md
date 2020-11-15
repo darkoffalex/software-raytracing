@@ -13,7 +13,7 @@
 
    ![изображение](README_files/soft_swadows.png)
    
-3) Базовый трассировщий путей (path tracing)
+3) Базовый трассировщик путей (path tracing)
 
    ![изображение](README_files/basic_path_tracing.png)
 
