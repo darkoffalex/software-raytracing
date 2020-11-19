@@ -30,4 +30,5 @@ add_subdirectory("Sources/Common")
 # Примеры приложений
 add_subdirectory("Sources/01_Basic")
 add_subdirectory("Sources/02_SoftShadows")
-add_subdirectory("Sources/03_BasicPathTracing")
+add_subdirectory("Sources/03_PathTracingBasics")
+add_subdirectory("Sources/04_PathTracingLights")

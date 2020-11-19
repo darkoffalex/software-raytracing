@@ -7,7 +7,6 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
-#include <cassert>
 
 #define M_PI 3.14159265358979323846  /* pi */
 
@@ -913,7 +912,21 @@ namespace math
     template <typename T = float>
     Mat3<T> GetRotationMat(const Vec3<T>& angles)
     {
-        return GetRotationMatY<T>(angles.y) * GetRotationMatX<T>(angles.x) * GetRotationMatZ<T>(angles.z);
+        // Углы в радианах
+        math::Vec3<float> ar = {
+                static_cast<float>(angles.x * (M_PI / 180.0f)),
+                static_cast<float>(angles.y * (M_PI / 180.0f)),
+                static_cast<float>(angles.z * (M_PI / 180.0f)),
+        };
+
+        // Итоговая матрица трансформации
+        return math::Mat3<T>(
+                {cosf(ar.z)*cosf(ar.y), sinf(ar.z)*cosf(ar.y), -sinf(ar.y)},
+                {cosf(ar.z)*sinf(ar.y)*sinf(ar.x)-sinf(ar.z)*cosf(ar.x), sinf(ar.z)*sinf(ar.y)*sinf(ar.x)+cosf(ar.z)*cosf(ar.x), cosf(ar.y)*sinf(ar.x)},
+                {cosf(ar.z)*sinf(ar.y)*cosf(ar.x)+sinf(ar.z)*sinf(ar.x), sinf(ar.z)*sinf(ar.y)*cosf(ar.x)-cosf(ar.z)*sinf(ar.x), cosf(ar.y)*cosf(ar.x)}
+        );
+
+        //return GetRotationMatY<T>(angles.y) * GetRotationMatX<T>(angles.x) * GetRotationMatZ<T>(angles.z);
     }
 
     /**
@@ -1105,7 +1118,6 @@ namespace math
     template <typename T = float>
     T Clamp(const T& v, const T& lo, const T& hi)
     {
-        assert(hi > lo);
         return (v < lo) ? lo : (hi < v) ? hi : v;
     }
 }

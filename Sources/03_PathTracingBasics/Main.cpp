@@ -35,7 +35,7 @@ HDC g_hdc = nullptr;
 /// Наименование класса
 const char* g_strClassName = "MainWindowClass";
 /// Заголовок окна
-const char* g_strWindowCaption = "03 - Basic path tracing example";
+const char* g_strWindowCaption = "03 - Path tracing basic example";
 /// Код последней ошибки
 ErrorCode g_lastError = ErrorCode::eNoErrors;
 
@@ -179,9 +179,9 @@ int main(int argc, char* argv[])
         Scene scene{};
         scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(0,-100.5f,-1.0),100.0f,materialGround));
         scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(0.0f,0.0f,-1.0f),0.5f,materialCenter));
-        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(-1.0f,0.0f,-1.0f),0.5f,materialGlass));
-        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(-1.0f,0.0f,-1.0f),0.4f,materialGlass,true));
-//        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(-1.0f,0.0f,-1.0f),0.5f,materialLeft));
+//        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(-1.0f,0.0f,-1.0f),0.5f,materialGlass));
+//        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(-1.0f,0.0f,-1.0f),0.4f,materialGlass,true));
+        scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(-1.0f,0.0f,-1.0f),0.5f,materialLeft));
         scene.addElement(std::make_shared<Sphere>(math::Vec3<float>(1.0f,0.0f,-1.0f),0.5f,materialRight));
 
         // Трассировка сцены лучами, запись результата в буфер изображения

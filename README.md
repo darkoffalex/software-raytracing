@@ -16,6 +16,10 @@
 3) Базовый трассировщик путей (path tracing)
 
    ![изображение](README_files/basic_path_tracing.png)
+   
+4) Источники света и непрямое освещение (path tracing)
+   
+   ![изображение](README_files/path_tracing_lights.png)
 
 Код писался и тестировался при помощи следующего набора инструментов
  - CLion (IDE)

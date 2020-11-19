@@ -87,7 +87,7 @@ namespace math
          * \param position Позиция центра сферы
          * \param radius Радиус сферы
          * \param tMin Минимальное расстояние до точки пересечения
-         * \param tMax Максимальное расстояние до точки пересеченияя
+         * \param tMax Максимальное расстояние до точки пересечения
          * \param tOut Расстояние от начала, до точки пересечения
          * \return Было ли пересечение с объектом
          */
@@ -142,7 +142,7 @@ namespace math
          * \param v1 Координаты вершины 1
          * \param v2 Координаты вершины 2
          * \param tMin Минимальное расстояние до точки пересечения
-         * \param tMax Максимальное расстояние до точки пересеченияя
+         * \param tMax Максимальное расстояние до точки пересечения
          * \param tOut Расстояние от начала, до точки пересечения
          * \param barycentricCoords Барицентрические координаты точки (используются для интерполяции)
          * \return Было ли пересечение с объектом
@@ -195,11 +195,13 @@ namespace math
                     if(result.x >= 0.0f && result.y >= 0.0f && result.x + result.y <= 1.0f)
                     {
                         // Отдать барицентрические координаты
-                        (*barycentricCoords).x = result.x;
-                        (*barycentricCoords).y = result.y;
+                        if(barycentricCoords != nullptr){
+                            (*barycentricCoords).x = result.x;
+                            (*barycentricCoords).y = result.y;
+                        }
 
                         // Отдать расстояние до пересечения
-                        *tOut = t;
+                        if(tOut != nullptr) *tOut = t;
 
                         return true;
                     }
@@ -214,7 +216,7 @@ namespace math
          * \param normal Нормаль плоскости
          * \param p0 Точка на плоскости
          * \param tMin Минимальное расстояние до точки пересечения
-         * \param tMax Максимальное расстояние до точки пересеченияя
+         * \param tMax Максимальное расстояние до точки пересечения
          * \param tOut Расстояние от начала, до точки пересечения
          * \return Было ли пересечение с объектом
          */
@@ -238,7 +240,109 @@ namespace math
                 // Пересечение также не считается засчитанным если дальность до точки вне требуемого диапозона
                 if(t > 0 && t >= tMin && t <= tMax)
                 {
-                    *tOut = t;
+                    if(tOut != nullptr) *tOut = t;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /**
+         * \brief Пересечение с прямоугольником выровненным по осям (на плоскости XY)
+         * \param z Положение прямоугольника на оси Z
+         * \param xMin Минимальная граница прямоугольника по X
+         * \param xMax Максимальная граница прямоугольника по X
+         * \param yMin Минимальная граница прямоугольника по Y
+         * \param yMax Максимальная граница прямоугольника по Y
+         * \param tMin Минимальное расстояние до точки пересечения
+         * \param tMax Максимальное расстояние до точки пересечения
+         * \param tOut Расстояние от начала, до точки пересечения
+         * \return Было ли пересечение с объектом
+         */
+        bool intersectsAARectangleXy(float z, float xMin, float xMax, float yMin, float yMax, float tMin, float tMax, float *tOut) const
+        {
+            // Выражаем параметр t если известна одна из осей
+            float t = (z - this->origin_.z) / this->direction_.z;
+
+            // Если длина направляющего вектора в допустимых пределах
+            if(t > 0 && t >= tMin && t <= tMax)
+            {
+                // Координаты по двум другим осям при параметре t
+                float x = this->origin_.x + this->direction_.x * t;
+                float y = this->origin_.y + this->direction_.y * t;
+
+                // Если все величины в допустимых пределах - пересечение засчитывается
+                if(x >= xMin && x <= xMax && y >= yMin && y <= yMax){
+                    if(tOut != nullptr) *tOut = t;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /**
+         * \brief Пересечение с прямоугольником выровненным по осям (на плоскости YZ)
+         * \param x Положение прямоугольника на оси X
+         * \param yMin Минимальная граница прямоугольника по Y
+         * \param yMax Максимальная граница прямоугольника по Y
+         * \param zMin Минимальная граница прямоугольника по Z
+         * \param zMax Максимальная граница прямоугольника по Z
+         * \param tMin Минимальное расстояние до точки пересечения
+         * \param tMax Максимальное расстояние до точки пересечения
+         * \param tOut Расстояние от начала, до точки пересечения
+         * \return Было ли пересечение с объектом
+         */
+        bool intersectsAARectangleYz(float x, float yMin, float yMax, float zMin, float zMax, float tMin, float tMax, float *tOut) const
+        {
+            // Выражаем параметр t если известна одна из осей
+            float t = (x - this->origin_.x) / this->direction_.x;
+
+            // Если длина направляющего вектора в допустимых пределах
+            if(t > 0 && t >= tMin && t <= tMax)
+            {
+                // Координаты по двум другим осям при параметре t
+                float y = this->origin_.y + this->direction_.y * t;
+                float z = this->origin_.z + this->direction_.z * t;
+
+                // Если все величины в допустимых пределах - пересечение засчитывается
+                if(y >= yMin && y <= yMax && z >= zMin && z <= zMax){
+                    if(tOut != nullptr) * tOut = t;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /**
+         * \brief Пересечение с прямоугольником выровненным по осям (на плоскости XZ)
+         * \param y Положение прямоугольника на оси X
+         * \param xMin Минимальная граница прямоугольника по X
+         * \param xMax Максимальная граница прямоугольника по X
+         * \param zMin Минимальная граница прямоугольника по Z
+         * \param zMax Максимальная граница прямоугольника по Z
+         * \param tMin Минимальное расстояние до точки пересечения
+         * \param tMax Максимальное расстояние до точки пересечения
+         * \param tOut Расстояние от начала, до точки пересечения
+         * \return Было ли пересечение с объектом
+         */
+        bool intersectsAARectangleXz(float y,  float xMin, float xMax, float zMin, float zMax, float tMin, float tMax, float *tOut) const
+        {
+            // Выражаем параметр t если известна одна из осей
+            float t = (y - this->origin_.y) / this->direction_.y;
+
+            // Если длина направляющего вектора в допустимых пределах
+            if(t > 0 && t >= tMin && t <= tMax)
+            {
+                // Координаты по двум другим осям при параметре t
+                float x = this->origin_.x + this->direction_.x * t;
+                float z = this->origin_.z + this->direction_.z * t;
+
+                // Если все величины в допустимых пределах - пересечение засчитывается
+                if(x >= xMin && x <= xMax && z >= zMin && z <= zMax){
+                    if(tOut != nullptr) * tOut = t;
                     return true;
                 }
             }

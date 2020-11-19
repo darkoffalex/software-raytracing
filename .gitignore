@@ -9,3 +9,4 @@ cmake-build-release-mingw-x86
 cmake-build-release-mingw-x64
 cmake-build-debug-visual-studio-x64
 cmake-build-release-visual-studio-x64
+cmake-build-release-visual-studio-x86
