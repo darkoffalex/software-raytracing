@@ -67,7 +67,7 @@ namespace materials
             (void) rayIn;
 
             // Отраженный от точки пересечения луч распространяется в случайном направлении в пределах полсуферы
-            math::Ray scattered(hitInfo.point,RndHemisphereVec2(hitInfo.normal));
+            math::Ray scattered(hitInfo.point,RndHemisphereVec3(hitInfo.normal));
 
             // Затухание (потеря света) происхолит по закону косинуса
             // Чем угол между нормалью поверхности и вектором отраженного луча меньше - тем сильнее освещенность

@@ -17,7 +17,7 @@
 inline float RndFloat(float min = 0.0f, float max = 1.0f){
     static std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
     static std::default_random_engine generator(static_cast<size_t>(ms.count()));
-    static std::uniform_real_distribution<float> distribution(min, max);
+    std::uniform_real_distribution<float> distribution(min, max);
 
     return distribution(generator);
 }
@@ -31,7 +31,7 @@ inline float RndFloat(float min = 0.0f, float max = 1.0f){
 inline math::Vec3<float> RndVec(float min = -1.0f, float max = 1.0f){
     static std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
     static std::default_random_engine generator(static_cast<size_t>(ms.count()));
-    static std::uniform_real_distribution<float> distribution(min, max);
+    std::uniform_real_distribution<float> distribution(min, max);
 
     return {
             distribution(generator),
@@ -66,7 +66,7 @@ inline math::Vec3<float> RndHemisphereVec(const math::Vec3<float>& dir, const fl
 
     // Коэффициенты распределения для двух уголов
     std::uniform_real_distribution<float> fiDist(0.0f,1.0f);
-    std::uniform_real_distribution<float> thetaDist(-1.0f, 1.0f);
+    std::uniform_real_distribution<float> thetaDist(0.0f, 1.0f);
 
     // Вектор перпендикулярный вектору направления
     auto b = math::Normalize(math::Cross(dir, dir + math::Vec3<float>(0.01f, 0.01f, 0.01f)));
@@ -76,7 +76,7 @@ inline math::Vec3<float> RndHemisphereVec(const math::Vec3<float>& dir, const fl
 
     // Случайные углы (fi - для вектора вращяющегося вокруг направления dir, theta - угол между итоговым вектором и направлением dir)
     float fi = (fiDist(generator) * 360.0f) / 57.2958f; // [0 - 360]
-    float theta = (thetaDist(generator) * thetaMax) / 57.2958f; // [-90 - 90]
+    float theta = (thetaDist(generator) * thetaMax) / 57.2958f; // [0 - 90]
 
     // Вектор описывающий круг вокруг направления dir
     math::Vec3<float> d = (b * std::cos(fi)) + (c * std::sin(fi));
@@ -85,7 +85,7 @@ inline math::Vec3<float> RndHemisphereVec(const math::Vec3<float>& dir, const fl
 }
 
 /**
- * \brief Случайный вектор в пределах полусферы в направлении dir (альтернативный метод)
+ * \brief Случайный вектор в пределах полусферы в направлении dir (реализация через сферические координаты)
  * \param dir Направление (ориентация) полусферы
  * \param thetaMax Максимальное отклонение направления (90 для полной полусферы)
  * \return Вектор
@@ -102,7 +102,7 @@ inline math::Vec3<float> RndHemisphereVec2(const math::Vec3<float>& dir, const f
 
     // Коэффициенты распределения для двух уголов
     std::uniform_real_distribution<float> fiDist(0.0f,1.0f);
-    std::uniform_real_distribution<float> thetaDist(-1.0f, 1.0f);
+    std::uniform_real_distribution<float> thetaDist(0.0f, 1.0f);
 
     // Генератор случайных чисел
     static std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
@@ -110,7 +110,7 @@ inline math::Vec3<float> RndHemisphereVec2(const math::Vec3<float>& dir, const f
 
     // Случайные углы (fi - азимутный угол, theta - полярный угол)
     float fi = (fiDist(generator) * 360.0f) / 57.2958f; // [0 - 360]
-    float theta = (thetaDist(generator) * thetaMax) / 57.2958f; // [-90 - 90]
+    float theta = (thetaDist(generator) * thetaMax) / 57.2958f; // [0 - 90]
 
     // Перевод из сферичесих координат в декартовы, получение вектора в локальном пространстве
     math::Vec3<float> dirLocal = {
@@ -121,6 +121,39 @@ inline math::Vec3<float> RndHemisphereVec2(const math::Vec3<float>& dir, const f
 
     // Вектор направления в мировых координатах
     return dirSpaceToWorldSpace * dirLocal;
+}
+
+/**
+ * \brief Случайный вектор в пределах полусферы в направлении dir (более равномерное распределения засчет выборки по высоте)
+ * \param dir Направление (ориентация) полусферы
+ * \param thetaMax Максимальное отклонение направления (90 для полной полусферы)
+ * \return Вектор
+ */
+inline math::Vec3<float> RndHemisphereVec3(const math::Vec3<float>& dir, const float& thetaMax = 90.0f)
+{
+    // Генератор случайных чисел
+    static std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+    static std::default_random_engine generator(static_cast<size_t>(ms.count()));
+
+    // Коэффициенты распределения для двух угло
+    // Второй угол вычисляется через случайную высоту, это дает наиболее равномерное распределение по полусфере
+    std::uniform_real_distribution<float> fiDist(0.0f,1.0f);
+    std::uniform_real_distribution<float> heightDist(std::cos(thetaMax/57.2958f), 1.0f);
+
+    // Вектор перпендикулярный вектору направления
+    auto b = math::Normalize(math::Cross(dir, dir + math::Vec3<float>(0.01f, 0.01f, 0.01f)));
+
+    // Второй перпендикулярный вектор
+    auto c = math::Normalize(math::Cross(dir, b));
+
+    // Случайные углы (fi - для вектора вращяющегося вокруг направления dir, theta - угол между итоговым вектором и направлением dir)
+    float fi = (fiDist(generator) * 360.0f) / 57.2958f; // [0 - 360]
+    float theta = std::acos(heightDist(generator)); //[0 - 90]
+
+    // Вектор описывающий круг вокруг направления dir
+    math::Vec3<float> d = (b * std::cos(fi)) + (c * std::sin(fi));
+    // Вектор отклоненный от dir на случайный угол theta
+    return (dir * std::cos(theta)) + (d * std::sin(theta));
 }
 
 /**

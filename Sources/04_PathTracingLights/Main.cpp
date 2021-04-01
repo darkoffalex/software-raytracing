@@ -19,7 +19,7 @@
 // Максимальная грубина рекурсии
 #define MAX_RECURSION_DEPTH 6
 // Мультисемплинг (сколько лучей генерировать на 1 пиксель картинки)
-#define SAMPLES_PER_PIXEL 16
+#define SAMPLES_PER_PIXEL 32
 // Сколько разбросанных (вторичных) лучей генерировать при пересечении луча и объекта
 #define SAMPLES_PER_RAY 1
 // Кол-во потоков
@@ -182,7 +182,7 @@ int main(int argc, char* argv[])
         auto white = std::make_shared<materials::Diffuse>(math::Vec3<float>(0.73f, 0.73f, 0.73f));
         auto green = std::make_shared<materials::Diffuse>(math::Vec3<float>(0.12f, 0.45f, 0.15f));
         auto light = std::make_shared<materials::Light>(math::Vec3<float>(15.0f,15.0f,15.0f));
-        auto metal = std::make_shared<materials::Metal>(math::Vec3<float>(0.8f,0.8f,0.8f),0.3f);
+        auto metal = std::make_shared<materials::Metal>(math::Vec3<float>(0.8f,0.8f,0.8f),0.2f);
         auto ball = std::make_shared<materials::Diffuse>(math::Vec3<float>(0.1f,0.2f,0.5f));
         auto glass = std::make_shared<materials::Refractive>(0.6f);
 
